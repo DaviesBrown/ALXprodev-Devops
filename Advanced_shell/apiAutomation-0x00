@@ -5,9 +5,9 @@ if [ -z "$pokemon_name" ]; then
   exit 1
 fi
 
-curl -Ssf https://pokeapi.co/api/v2/pokemon/$pokemon_name > data.json 2> error.txt
+curl -Ssf https://pokeapi.co/api/v2/pokemon/$pokemon_name > data.json 2> errors.txt
 
-if [ -s error.txt ]; then
+if [ -s errors.txt ]; then
   echo "An error occurred. See error.txt for details."
   exit 2
 fi
