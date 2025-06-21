@@ -1,0 +1,13 @@
+#!/bin/bash
+pokemon_name=$1
+if [ -z "$pokemon_name" ]; then
+  echo "Usage: $0 <pokemon_name>"
+  exit 1
+fi
+
+curl -Ssf https://pokeapi.co/api/v2/pokemon/$pokemon_name > data.json 2> error.txt
+
+if [ -s error.txt ]; then
+  echo "An error occurred. See error.txt for details."
+  exit 2
+fi
