@@ -1,0 +1,7 @@
+#!/bin/bash
+pokemon_name=$(jq -j '.name' data.json)
+pokemon_types=$(jq -j '.types | map(.type.name) | join(", ")' data.json)
+pokemon_weight=$(jq -j '.weight' data.json)
+pokemon_height=$(jq -j '.height' data.json)
+pokemon_description="$pokemon_name is of type $pokemon_types, weighs ${pokemon_weight}kg, and is ${pokemon_height}m tall."
+echo "$pokemon_description"
