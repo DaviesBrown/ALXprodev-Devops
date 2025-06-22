@@ -2,50 +2,46 @@
 
 OUTPUT_DIR="pokemon_data"
 ERROR_LOG="errors.txt"
-TIMEOUT=10  # seconds before force-kill
+TIMEOUT=10  # Optional: Kill process if it runs longer
 mkdir -p "$OUTPUT_DIR"
 > "$ERROR_LOG"
 
 POKEMON_LIST=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 
-# Function to fetch one Pokémon
+# Function to fetch Pokémon
 fetch_pokemon() {
   local NAME=$1
   local API_URL="https://pokeapi.co/api/v2/pokemon/$NAME"
   local OUTPUT_FILE="$OUTPUT_DIR/${NAME}.json"
 
   echo "Fetching data for $NAME..."
-
   if curl -s -f "$API_URL" -o "$OUTPUT_FILE"; then
     echo "Saved data to $OUTPUT_FILE ✅"
   else
-    echo "Failed to fetch data for $NAME ❌" | tee -a "$ERROR_LOG"
+    echo "Failed to fetch data for $NAME ❌" >> "$ERROR_LOG"
   fi
 }
 
-# Array to store PIDs
-declare -A PID_MAP
-
-# Start processes in background and track PIDs
-for POKEMON in "${POKEMON_LIST[@]}"; do
-  fetch_pokemon "$POKEMON" &
-  PID_MAP[$POKEMON]=$!
+# Start each fetch in background
+for NAME in "${POKEMON_LIST[@]}"; do
+  fetch_pokemon "$NAME" &
 done
 
-# Monitor and manage each process
-for POKEMON in "${!PID_MAP[@]}"; do
-  PID=${PID_MAP[$POKEMON]}
+# Capture all job PIDs
+JOB_PIDS=($(jobs -p))
 
-  # Wait with timeout
-  SECONDS=0
-  while kill -0 "$PID" 2>/dev/null; do
-    if [ $SECONDS -ge $TIMEOUT ]; then
-      echo "Timeout reached for $POKEMON (PID: $PID). Killing..." | tee -a "$ERROR_LOG"
-      kill -9 "$PID" 2>/dev/null
-      break
+# Monitor and optionally kill long-running jobs
+for PID in "${JOB_PIDS[@]}"; do
+  ( 
+    sleep "$TIMEOUT"
+    if kill -0 "$PID" 2>/dev/null; then
+      echo "Killing job $PID due to timeout..." | tee -a "$ERROR_LOG"
+      kill -9 "$PID"
     fi
-    sleep 1
-  done
+  ) &
 done
 
-echo "All processes managed. Check $ERROR_LOG for any failed fetches."
+# Wait for all original jobs to finish
+wait
+
+echo "All jobs completed or were killed. Check '$ERROR_LOG' if needed."
